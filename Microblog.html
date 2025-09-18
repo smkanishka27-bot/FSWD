@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mini Microblog (Single File)</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#1d4ed8;--muted:#9aa6b2;--glass: rgba(255,255,255,0.03)}
+    *{box-sizing:border-box;font-family:Inter, system-ui, sans-serif}
+    body{margin:0;background:linear-gradient(180deg,#071025 0%, #06121a 100%);color:#e6eef6;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .app{width:100%;max-width:1000px;display:grid;grid-template-columns:320px 1fr;gap:18px}
+    header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:var(--card);border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    header h1{margin:0;font-size:18px}
+    .panel{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    .left{display:flex;flex-direction:column;gap:12px}
+    .user-switch{display:flex;gap:8px;align-items:center}
+    select,input,button,textarea{font-family:inherit}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    button{background:var(--accent);border:none;color:white;padding:8px 12px;border-radius:8px;cursor:pointer}
+    .muted{color:var(--muted);font-size:13px}
+    .small{font-size:13px}
+    .form-row{display:flex;gap:8px}
+    textarea{width:100%;min-height:70px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    .users-list{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow:auto;padding-right:4px}
+    .user-card{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:8px;background:var(--glass)}
+    .user-card .meta{display:flex;gap:8px;align-items:center}
+    .avatar{width:44px;height:44px;border-radius:10px;display:inline-grid;place-items:center;background:linear-gradient(135deg,#0ea5e9,#7c3aed);font-weight:700}
+    .feed{display:flex;flex-direction:column;gap:12px}
+    .post{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:12px;border-radius:10px}
+    .post .top{display:flex;gap:10px;align-items:center}
+    .post .content{margin-top:8px;white-space:pre-wrap}
+    .meta-row{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:13px;margin-top:8px}
+    .right{display:flex;flex-direction:column;gap:12px}
+    .search{display:flex;gap:8px}
+    .pill{padding:6px 8px;border-radius:999px;background:rgba(255,255,255,0.03);font-size:13px}
+    .empty{padding:18px;text-align:center;color:var(--muted);border-radius:8px}
+    footer{grid-column:1/-1;text-align:center;margin-top:8px;color:var(--muted);font-size:13px}
+    @media(max-width:880px){.app{grid-template-columns:1fr;}.left{order:2}.right{order:3}.feed{order:1}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Mini Microblog — Single File Demo</h1>
+      <div class="muted small">Local demo · data saved in browser</div>
+    </header>
+
+    <aside class="panel left">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="small muted">Accounts</div>
+          <button id="btnNewUser">+ New</button>
+        </div>
+        <div class="users-list" id="usersList"></div>
+      </div>
+
+      <div style="margin-top:6px">
+        <div class="small muted">Switch / Active User</div>
+        <div class="user-switch" style="margin-top:6px">
+          <select id="selectUser"></select>
+          <button id="btnSetActive">Set</button>
+        </div>
+      </div>
+
+      <div style="margin-top:8px">
+        <div class="small muted">Quick actions</div>
+        <div class="controls" style="margin-top:6px">
+          <button id="btnClearData">Clear All Data</button>
+          <button id="btnSeed">Seed Example</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="panel right">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="small muted">Compose</div>
+            <div id="activeUserName" style="font-weight:700;margin-top:4px">Not signed in</div>
+          </div>
+          <div class="small muted">Timeline</div>
+        </div>
+
+        <div style="margin-top:8px">
+          <textarea id="txtPost" placeholder="What's happening? (max 280 chars)"></textarea>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+            <div class="muted small" id="charCount">0 / 280</div>
+            <div style="display:flex;gap:8px">
+              <button id="btnPost">Post</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr style="border:none;height:12px;opacity:0" />
+
+      <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="small muted">Feed (posts from people you follow)</div>
+        <div class="small muted">Sort: <span id="sortMode" class="pill">Newest</span></div>
+      </div>
+
+      <div class="feed" id="feed"></div>
+    </main>
+
+    <section class="panel" style="grid-column:1/-1;">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="small muted">All Users & Follow Controls</div>
+          <div class="muted small">Click follow to see their posts in your timeline</div>
+        </div>
+        <div class="small muted">Stored locally</div>
+      </div>
+
+      <div id="allUsers" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"></div>
+    </section>
+
+    <footer>Open this file in a modern browser. Not for production — demo only.</footer>
+  </div>
+
+  <script>
+    // Simple single-file microblog using localStorage. No server.
+    // Data model:
+    // users: [{id,name,handle,following: [userId,...]}]
+    // posts: [{id,authorId,text,ts}]
+
+    // Helpers
+    const $ = id => document.getElementById(id);
+    const uid = () => 'u_' + Math.random().toString(36).slice(2,9);
+    const pid = () => 'p_' + Math.random().toString(36).slice(2,10);
+    const L = {
+      users: JSON.parse(localStorage.getItem('micro_users')||'null'),
+      posts: JSON.parse(localStorage.getItem('micro_posts')||'null'),
+      active: localStorage.getItem('micro_active') || null
+    };
+
+    function save(){
+      localStorage.setItem('micro_users', JSON.stringify(L.users));
+      localStorage.setItem('micro_posts', JSON.stringify(L.posts));
+      if(L.active) localStorage.setItem('micro_active', L.active);
+    }
+
+    function ensure(){
+      if(!Array.isArray(L.users)) L.users = [];
+      if(!Array.isArray(L.posts)) L.posts = [];
+    }
+
+    ensure();
+
+    // UI renderers
+    function renderUsersList(){
+      const container = $('usersList'); container.innerHTML='';
+      const sel = $('selectUser'); sel.innerHTML='';
+      L.users.forEach(u=>{
+        const div = document.createElement('div'); div.className='user-card';
+        div.innerHTML = `
+          <div class='meta'>
+            <div class='avatar'>${(u.name||u.handle||'U')[0].toUpperCase()}</div>
+            <div>
+              <div style='font-weight:700'>${escapeHtml(u.name||u.handle)}</div>
+              <div class='muted small'>@${escapeHtml(u.handle)}</div>
+            </div>
+          </div>
+          <div>
+            <button data-id='${u.id}' class='btnSwitch small'>Switch</button>
+            <button data-id='${u.id}' class='btnDel small' style='margin-left:6px;background:#ef4444'>Del</button>
+          </div>`;
+        container.appendChild(div);
+        const opt = document.createElement('option'); opt.value = u.id; opt.textContent = u.name || u.handle; sel.appendChild(opt);
+      });
+
+      // bind
+      container.querySelectorAll('.btnSwitch').forEach(b=>b.onclick=e=>{
+        L.active = e.currentTarget.dataset.id; save(); renderActive(); renderFeed(); renderAllUsers();
+      });
+      container.querySelectorAll('.btnDel').forEach(b=>b.onclick=e=>{
+        const id = e.currentTarget.dataset.id; if(!confirm('Delete user and their posts?')) return;
+        L.users = L.users.filter(u=>u.id!==id);
+        L.posts = L.posts.filter(p=>p.authorId!==id);
+        if(L.active===id) L.active = null;
+        save(); renderAll();
+      });
+
+      // select binding
+      $('btnSetActive').onclick = ()=>{ const id = sel.value; L.active = id; save(); renderActive(); renderFeed(); renderAllUsers(); }
+    }
+
+    function renderActive(){
+      const name = L.active ? (L.users.find(u=>u.id===L.active)?.name || 'Unknown') : 'Not signed in';
+      $('activeUserName').textContent = name;
+    }
+
+    function renderFeed(){
+      const feed = $('feed'); feed.innerHTML='';
+      if(!L.active){ feed.innerHTML = '<div class="empty">Sign in to see your feed. Or view all posts below.</div>'; return; }
+      const me = L.users.find(u=>u.id===L.active);
+      const following = new Set([me.id, ...(me.following||[]) ]);
+      let posts = L.posts.filter(p=>following.has(p.authorId));
+      posts.sort((a,b)=>b.ts-a.ts); // newest
+
+      if(posts.length===0){ feed.innerHTML = '<div class="empty">No posts from people you follow yet.</div>'; return; }
+      posts.forEach(p=>{
+        const author = L.users.find(u=>u.id===p.authorId) || {name:'Unknown',handle:'unknown'};
+        const d = document.createElement('div'); d.className='post';
+        d.innerHTML = `
+          <div class='top'>
+            <div class='avatar'>${(author.name||author.handle||'U')[0].toUpperCase()}</div>
+            <div style='flex:1'>
+              <div style='display:flex;justify-content:space-between;align-items:center'>
+                <div>
+                  <div style='font-weight:700'>${escapeHtml(author.name)}</div>
+                  <div class='muted small'>@${escapeHtml(author.handle)} · ${timeAgo(p.ts)}</div>
+                </div>
+                <div>
+                  ${p.authorId===L.active?'<button data-id="'+p.id+'" class="btnDelPost">Delete</button>':''}
+                </div>
+              </div>
+              <div class='content'>${escapeHtml(p.text)}</div>
+              <div class='meta-row'>
+                <div class='small muted'>${new Date(p.ts).toLocaleString()}</div>
+              </div>
+            </div>
+          </div>`;
+        feed.appendChild(d);
+      });
+      // post delete
+      feed.querySelectorAll('.btnDelPost').forEach(b=>b.onclick=e=>{
+        const id = e.currentTarget.dataset.id; if(!confirm('Delete post?')) return;
+        L.posts = L.posts.filter(p=>p.id!==id); save(); renderFeed(); renderAllUsers();
+      });
+    }
+
+    function renderAllUsers(){
+      const container = $('allUsers'); container.innerHTML='';
+      L.users.forEach(u=>{
+        const div = document.createElement('div'); div.className='pill'; div.style.display='flex'; div.style.alignItems='center';
+        div.style.gap='8px'; div.innerHTML = `
+          <div style='display:flex;align-items:center;gap:8px'>
+            <div class='avatar' style='width:36px;height:36px;border-radius:8px'>${(u.name||u.handle||'U')[0].toUpperCase()}</div>
+            <div style='min-width:120px'>
+              <div style='font-weight:700'>${escapeHtml(u.name)}</div>
+              <div class='muted small'>@${escapeHtml(u.handle)}</div>
+            </div>
+          </div>
+          <div>
+            <button data-id='${u.id}' class='btnFollow'>Follow</button>
+          </div>`;
+        container.appendChild(div);
+      });
+
+      container.querySelectorAll('.btnFollow').forEach(b=>b.onclick=e=>{
+        const id = e.currentTarget.dataset.id; if(!L.active){ alert('Set an active user to follow people.'); return; }
+        const me = L.users.find(x=>x.id===L.active); if(!me) return;
+        me.following = me.following || [];
+        if(me.following.includes(id)){
+          // unfollow
+          me.following = me.following.filter(x=>x!==id);
+        } else {
+          me.following.push(id);
+        }
+        save(); renderAllUsers(); renderUsersList(); renderFeed();
+      });
+
+      // update button text reflect following
+      if(L.active){
+        const me = L.users.find(x=>x.id===L.active);
+        container.querySelectorAll('.btnFollow').forEach(b=>{
+          const id=b.dataset.id;
+          if(me && me.following && me.following.includes(id)) b.textContent='Unfollow';
+          else b.textContent='Follow';
+        });
+      }
+    }
+
+    // Compose / post
+    $('txtPost').oninput = e=>{ $('charCount').textContent = e.target.value.length + ' / 280'; }
+    $('btnPost').onclick = ()=>{
+      const txt = $('txtPost').value.trim(); if(!L.active){ alert('Set an active user first.'); return; }
+      if(!txt) return alert('Write something first');
+      if(txt.length>280) return alert('Too long');
+      const p = { id: pid(), authorId: L.active, text: txt, ts: Date.now() };
+      L.posts.push(p); save(); $('txtPost').value = ''; $('charCount').textContent='0 / 280'; renderFeed(); renderAllUsers();
+    }
+
+    // create new user
+    $('btnNewUser').onclick = ()=>{
+      const name = prompt('Name for new user? (eg. Alice)'); if(!name) return;
+      const handle = (prompt('Handle (no @). e.g. alice2025') || name.toLowerCase().replace(/\s+/g,'')).replace(/[^a-z0-9_\-]/gi,'');
+      const newu = { id: uid(), name: name.trim(), handle: handle || ('u'+Math.floor(Math.random()*9999)), following: [] };
+      L.users.push(newu); L.active = newu.id; save(); renderAll();
+    }
+
+    // seed
+    $('btnSeed').onclick = ()=>{ seed(); }
+
+    function seed(){
+      L.users = [
+        {id:'u_a',name:'Alice',handle:'alice',following:[]},
+        {id:'u_b',name:'Bob',handle:'bob',following:[]},
+        {id:'u_c',name:'Carol',handle:'carol',following:[]}
+      ];
+      L.posts = [
+        {id:pid(),authorId:'u_a',text:'Hello world! This is Alice.',ts:Date.now()-1000*60*60},
+        {id:pid(),authorId:'u_b',text:'Bob here. Trying the mini microblog.',ts:Date.now()-1000*60*30},
+        {id:pid(),authorId:'u_c',text:'Carol posting a short note.',ts:Date.now()-1000*60*10}
+      ];
+      L.active = 'u_a'; save(); renderAll();
+    }
+
+    // clear data
+    $('btnClearData').onclick = ()=>{
+      if(confirm('Clear all microblog data from your browser?')){ localStorage.removeItem('micro_users'); localStorage.removeItem('micro_posts'); localStorage.removeItem('micro_active'); L.users=[]; L.posts=[]; L.active=null; renderAll(); }
+    }
+
+    function renderAll(){ renderUsersList(); renderActive(); renderFeed(); renderAllUsers(); }
+
+    // utility: escape HTML
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    function timeAgo(ts){ const s = Math.floor((Date.now()-ts)/1000); if(s<60) return s+'s'; if(s<3600) return Math.floor(s/60)+'m'; if(s<86400) return Math.floor(s/3600)+'h'; return Math.floor(s/86400)+'d'; }
+
+    // load existing or create an initial user
+    if(!L.users || L.users.length===0) { // create a default example user so UI isn't empty
+      // do nothing until user seeds or creates a user
+    }
+    renderAll();
+
+    // (optional) expose to window for debugging
+    window.micro = { L, save, seed };
+  </script>
+</body>
+</html>

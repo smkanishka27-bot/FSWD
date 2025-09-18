@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classifieds Marketplace</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #f5f7fa; color: #333; }
+    header { background: linear-gradient(135deg, #4CAF50, #2E7D32); color: white; padding: 20px; text-align: center; }
+    header h1 { margin: 0; font-size: 2rem; }
+    header p { margin: 5px 0 0; }
+    nav { display: flex; justify-content: center; gap: 20px; padding: 10px; background: #388E3C; }
+    nav button { background: #fff; border: none; padding: 10px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+    nav button:hover { background: #C8E6C9; }
+    .container { padding: 20px; }
+    .listing, .form-section { border: 1px solid #ddd; border-radius: 12px; padding: 15px; margin: 15px 0; background: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.05); transition: transform 0.2s; }
+    .listing:hover { transform: scale(1.03); }
+    .listing img { width: 100%; border-radius: 10px; max-height: 200px; object-fit: cover; }
+    .listing h3 { margin: 10px 0 5px; }
+    .listing p { margin: 5px 0; }
+    .btn { background: #4CAF50; color: white; padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; margin: 5px 0; }
+    .btn:hover { background: #2E7D32; }
+    footer { background: #2E7D32; color: white; text-align: center; padding: 15px; margin-top: 20px; }
+    .search-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+    .search-bar input, .search-bar select { padding: 10px; border-radius: 8px; border: 1px solid #ccc; flex: 1; }
+    .form-section input, .form-section textarea, .form-section select { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🛒 Classifieds Marketplace</h1>
+    <p>Buy and sell your products easily</p>
+  </header>
+
+  <nav>
+    <button onclick="showSection('browse')">Browse Listings</button>
+    <button onclick="showSection('sell')">Sell an Item</button>
+    <button onclick="showSection('mylistings')">My Listings</button>
+    <button onclick="showSection('favorites')">Favorites ❤️</button>
+  </nav>
+
+  <div class="container">
+    <section id="browse" class="section">
+      <h2>Browse Listings</h2>
+      <div class="search-bar">
+        <input type="text" id="search" placeholder="Search for items..." oninput="renderListings()">
+        <select id="filter" onchange="renderListings()">
+          <option value="all">All Categories</option>
+          <option value="Electronics">Electronics</option>
+          <option value="Furniture">Furniture</option>
+          <option value="Fashion">Fashion</option>
+          <option value="Vehicles">Vehicles</option>
+        </select>
+      </div>
+      <div id="listing-container"></div>
+    </section>
+
+    <section id="sell" class="section" style="display:none;">
+      <h2>Post an Item for Sale</h2>
+      <div class="form-section">
+        <input type="text" id="title" placeholder="Item Title">
+        <textarea id="description" placeholder="Item Description"></textarea>
+        <input type="number" id="price" placeholder="Price">
+        <select id="category">
+          <option value="Electronics">Electronics</option>
+          <option value="Furniture">Furniture</option>
+          <option value="Fashion">Fashion</option>
+          <option value="Vehicles">Vehicles</option>
+        </select>
+        <input type="file" id="image" accept="image/*">
+        <button class="btn" onclick="postItem()">Post Item</button>
+      </div>
+    </section>
+
+    <section id="mylistings" class="section" style="display:none;">
+      <h2>My Listings</h2>
+      <div id="my-listings"></div>
+    </section>
+
+    <section id="favorites" class="section" style="display:none;">
+      <h2>My Favorites ❤️</h2>
+      <div id="favorite-listings"></div>
+    </section>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 Classifieds Marketplace | Buy Smart, Sell Fast</p>
+  </footer>
+
+  <script>
+    let listings = [
+      { title: "iPhone 13", description: "Brand new, 128GB storage", price: 650, category: "Electronics", img: "https://source.unsplash.com/400x300/?iphone" },
+      { title: "Sofa Set", description: "3 seater, great condition", price: 300, category: "Furniture", img: "https://source.unsplash.com/400x300/?sofa" },
+      { title: "Mountain Bike", description: "21-speed, barely used", price: 250, category: "Vehicles", img: "https://source.unsplash.com/400x300/?bicycle" }
+    ];
+    let favorites = [];
+
+    function showSection(id) {
+      document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
+      document.getElementById(id).style.display = 'block';
+      if(id === 'browse') renderListings();
+      if(id === 'mylistings') renderMyListings();
+      if(id === 'favorites') renderFavorites();
+    }
+
+    function renderListings() {
+      const container = document.getElementById('listing-container');
+      container.innerHTML = '';
+      const search = document.getElementById('search').value.toLowerCase();
+      const filter = document.getElementById('filter').value;
+
+      listings.filter(item => 
+        (filter === 'all' || item.category === filter) &&
+        (item.title.toLowerCase().includes(search) || item.description.toLowerCase().includes(search))
+      ).forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'listing';
+        div.innerHTML = `
+          <img src="${item.img}" alt="${item.title}">
+          <h3>${item.title}</h3>
+          <p>${item.description}</p>
+          <p><strong>$${item.price}</strong> | ${item.category}</p>
+          <button class="btn" onclick="addToFavorites(${index})">❤️ Favorite</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function postItem() {
+      const title = document.getElementById('title').value;
+      const description = document.getElementById('description').value;
+      const price = document.getElementById('price').value;
+      const category = document.getElementById('category').value;
+      const imgInput = document.getElementById('image');
+
+      let img = "https://source.unsplash.com/400x300/?product";
+      if(imgInput.files && imgInput.files[0]){
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          listings.push({ title, description, price, category, img: e.target.result });
+          renderListings();
+          alert("Item posted successfully!");
+        };
+        reader.readAsDataURL(imgInput.files[0]);
+      } else {
+        listings.push({ title, description, price, category, img });
+        renderListings();
+        alert("Item posted successfully!");
+      }
+    }
+
+    function renderMyListings() {
+      const container = document.getElementById('my-listings');
+      container.innerHTML = '';
+      listings.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'listing';
+        div.innerHTML = `
+          <img src="${item.img}" alt="${item.title}">
+          <h3>${item.title}</h3>
+          <p>${item.description}</p>
+          <p><strong>$${item.price}</strong> | ${item.category}</p>
+          <button class="btn" onclick="deleteListing(${index})">🗑 Delete</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function deleteListing(index) {
+      listings.splice(index, 1);
+      renderMyListings();
+    }
+
+    function addToFavorites(index) {
+      favorites.push(listings[index]);
+      alert("Added to favorites!");
+    }
+
+    function renderFavorites() {
+      const container = document.getElementById('favorite-listings');
+      container.innerHTML = '';
+      favorites.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'listing';
+        div.innerHTML = `
+          <img src="${item.img}" alt="${item.title}">
+          <h3>${item.title}</h3>
+          <p>${item.description}</p>
+          <p><strong>$${item.price}</strong> | ${item.category}</p>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    renderListings();
+  </script>
+</body>
+</html>

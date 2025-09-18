@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Delivery App</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background-color: #fafafa; color: #333; }
+    header { background: #ff5722; color: white; padding: 20px; text-align: center; }
+    header h1 { margin: 0; }
+    .restaurants, .menu, .cart { padding: 20px; }
+    .restaurant, .menu-item { border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin: 10px; background: #fff; display: inline-block; width: 250px; vertical-align: top; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s; }
+    .restaurant:hover, .menu-item:hover { transform: scale(1.05); }
+    img { width: 100%; border-radius: 10px; }
+    button { background: #ff5722; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+    button:hover { background: #e64a19; }
+    .cart { border-top: 2px solid #ff5722; background: #fff3e0; }
+    .cart h3 { margin-top: 0; }
+    footer { background: #ff5722; color: white; text-align: center; padding: 10px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🍔 FoodieExpress</h1>
+    <p>Order delicious food from your favorite restaurants!</p>
+  </header>
+
+  <section class="restaurants">
+    <h2>Available Restaurants</h2>
+    <div class="restaurant">
+      <img src="https://source.unsplash.com/400x250/?pizza" alt="Pizza Place">
+      <h3>Pizza Palace</h3>
+      <p>Delicious cheesy pizzas with fresh toppings.</p>
+      <button onclick="loadMenu('pizza')">View Menu</button>
+    </div>
+    <div class="restaurant">
+      <img src="https://source.unsplash.com/400x250/?burger" alt="Burger House">
+      <h3>Burger House</h3>
+      <p>Juicy burgers with fries and shakes.</p>
+      <button onclick="loadMenu('burger')">View Menu</button>
+    </div>
+    <div class="restaurant">
+      <img src="https://source.unsplash.com/400x250/?indian-food" alt="Indian Kitchen">
+      <h3>Indian Kitchen</h3>
+      <p>Authentic Indian curries and breads.</p>
+      <button onclick="loadMenu('indian')">View Menu</button>
+    </div>
+  </section>
+
+  <section class="menu" id="menu">
+    <h2>Menu</h2>
+    <div id="menu-items"></div>
+  </section>
+
+  <section class="cart">
+    <h3>Your Cart 🛒</h3>
+    <div id="cart-items"></div>
+    <p><strong>Total:</strong> $<span id="total">0</span></p>
+    <button onclick="checkout()">Checkout</button>
+  </section>
+
+  <footer>
+    <p>&copy; 2025 FoodieExpress. Eat Fresh, Stay Happy!</p>
+  </footer>
+
+  <script>
+    const menus = {
+      pizza: [
+        { name: "Margherita", price: 8, img: "https://source.unsplash.com/200x150/?margherita-pizza" },
+        { name: "Pepperoni", price: 10, img: "https://source.unsplash.com/200x150/?pepperoni-pizza" },
+        { name: "Veggie Delight", price: 9, img: "https://source.unsplash.com/200x150/?veggie-pizza" }
+      ],
+      burger: [
+        { name: "Cheeseburger", price: 6, img: "https://source.unsplash.com/200x150/?cheeseburger" },
+        { name: "Chicken Burger", price: 7, img: "https://source.unsplash.com/200x150/?chicken-burger" },
+        { name: "Veggie Burger", price: 5, img: "https://source.unsplash.com/200x150/?veggie-burger" }
+      ],
+      indian: [
+        { name: "Butter Chicken", price: 12, img: "https://source.unsplash.com/200x150/?butter-chicken" },
+        { name: "Paneer Tikka", price: 10, img: "https://source.unsplash.com/200x150/?paneer-tikka" },
+        { name: "Biryani", price: 11, img: "https://source.unsplash.com/200x150/?biryani" }
+      ]
+    };
+
+    let cart = [];
+
+    function loadMenu(type) {
+      const menuContainer = document.getElementById('menu-items');
+      menuContainer.innerHTML = '';
+      menus[type].forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'menu-item';
+        div.innerHTML = `
+          <img src="${item.img}" alt="${item.name}">
+          <h4>${item.name}</h4>
+          <p>Price: $${item.price}</p>
+          <button onclick="addToCart('${item.name}', ${item.price})">Add to Cart</button>
+        `;
+        menuContainer.appendChild(div);
+      });
+    }
+
+    function addToCart(name, price) {
+      cart.push({ name, price });
+      updateCart();
+    }
+
+    function updateCart() {
+      const cartContainer = document.getElementById('cart-items');
+      cartContainer.innerHTML = '';
+      let total = 0;
+      cart.forEach((item, index) => {
+        total += item.price;
+        const div = document.createElement('div');
+        div.innerHTML = `${item.name} - $${item.price} <button onclick="removeFromCart(${index})">Remove</button>`;
+        cartContainer.appendChild(div);
+      });
+      document.getElementById('total').textContent = total;
+    }
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      updateCart();
+    }
+
+    function checkout() {
+      if(cart.length === 0){
+        alert('Your cart is empty!');
+        return;
+      }
+      alert('Thank you for your order! Your food is on the way 🚚🍴');
+      cart = [];
+      updateCart();
+    }
+  </script>
+</body>
+</html>
